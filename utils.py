@@ -174,7 +174,7 @@ class Dataset:
         return self.linear_corr_pearson(x="Masa ciała (g)", y=y, **kwargs)
     
     def corr_heatmap(self, filter, columns, title, vmin=-1, vmax=1, **kwargs):
-        plt.figure(figsize=(16, 12))
+        plt.figure(figsize=(18, 10))
         corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='spearman')
         ones = np.ones_like(corr)
         mask = ones - np.tril(ones) 
