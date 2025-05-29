@@ -2,3 +2,5 @@ pandas
 scipy
 seaborn
 matplotlib
+tabulate
+statsmodels
