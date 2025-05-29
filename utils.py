@@ -2,7 +2,7 @@ import pandas as pd
 import seaborn as sns
 import scipy.stats as stats
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 class Dataset:
 
@@ -15,9 +15,51 @@ class Dataset:
 
     def fix_wing_span(self):
         self.df.dropna(inplace=True)
-        self.df["Rozpiętość skrzydeł (cm)"] = self.df["Rozpiętość skrzydeł (cm)"].astype(
-            float
-        )
+        self.df["Rozpiętość skrzydeł (cm)"] = self.df[
+            "Rozpiętość skrzydeł (cm)"
+        ].astype(float)
+
+    @property
+    def data_cols(self):
+        return [
+            "Masa ciała (g)",
+
+            "Długość ciała (cm)",
+            "Długość tułowia (cm)",
+            "Długość skrzydła P (cm)",
+            "Długość skrzydła L (cm)",
+            "Rozpiętość skrzydeł (cm)",
+            "Długość ogona (cm)",
+            
+            "Długość głowy (cm)",
+            "Długość dzioba (cm)",
+            "Grubość dzioba (cm)",
+            "Szerokość głowy (cm)",
+
+            "Średnica stępu L (cm)",
+            
+            "Szerokość klatki piersiowej (cm)",
+            "Obwód klatki piersiowej (cm)",
+            "Głębokość klatki piersiowej (cm)",
+            
+            "Długość przełyku z wolem (cm)",
+            "Długość żołądka gruczołowego (cm)",
+            "Masa żołądka mięśniowego (g)",
+            "Obwód żołądka mięśniowego (cm)",
+            "Objętość żołądka mięśniowego (ml)",
+            
+            "Długość dwunastnicy (cm)",
+            "Długość jelita czczego (cm)",
+            "Długość jelita biodrowego (cm)",
+            "Długość jelita ślepego P (cm)",
+            "Długość jelita ślepego L (cm)",
+            "Okrężnica z odbytnicą (cm)",
+            
+            "Masa serca (g)",
+            "Masa wątroby (g)",
+            "Masa nerki P (g)",
+            "Masa nerki L (g)",
+        ]
 
     def fix_intestine(self):
         self.df.dropna(inplace=True)
@@ -57,7 +99,7 @@ class Dataset:
         return f, m
 
     def _save_plot(self, fig, name):
-        path = "images/" + name.replace("/", "_")
+        path = "images/" + name.replace("/", "_") + ".png"
         print(f"Saving plot to '{path}'")
         plt.savefig(path, dpi=300, bbox_inches="tight")
 
@@ -72,7 +114,7 @@ class Dataset:
         # print("F", self.basic_stats(x))
         # print("M", self.basic_stats(y))
         g = sns.boxplot(x="Płeć", y=x, data=self.df)
-        self._save_plot(g, f"{x} by gender.png")
+        self._save_plot(g, f"{x} by gender")
         return g
 
     def histogram(self, x, bins=7, **kwargs):
@@ -125,11 +167,32 @@ class Dataset:
         ax.legend()
         if ax is None or not hasattr(ax, "figure"):
             fig = ax.get_figure()
-            self._save_plot(fig, f"images/Correlation between {x} and {y}.png")
+            self._save_plot(fig, f"Correlation between {x} and {y}")
         return ax
 
     def corr_body_mass(self, y, **kwargs):
         return self.linear_corr_pearson(x="Masa ciała (g)", y=y, **kwargs)
+    
+    def corr_heatmap(self, filter, columns, title, vmin=-1, vmax=1, **kwargs):
+        plt.figure(figsize=(16, 12))
+        corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='spearman')
+        ones = np.ones_like(corr)
+        mask = ones - np.tril(ones) 
+        g = sns.heatmap(
+            corr[columns],
+            annot=True,
+            mask=mask.astype(bool),
+            fmt=".2f",
+            cmap="coolwarm",
+            square=False,
+            vmin=vmin,
+            vmax=vmax,
+            **kwargs,
+        )
+        self._save_plot(g, title)
+        # g.set_title(title)
+        return g
+
 
 
 def init_notebook():
@@ -145,46 +208,54 @@ def get_data():
     )
     df = df.replace("BRAK", pd.NA).replace(float("NaN"), pd.NA).replace("X", pd.NA)
     df["Płeć"] = df["Płeć"].replace("W", "Samice").replace("M", "Samce")
-    df["Długość ciała (cm)"] = df["Długość ciała"]
     df["Masa ciała (g)"] = df["Masa ciała (kg)"] * 1000
     del df["Masa ciała (kg)"]
 
-    df.rename(columns={
-        'Długość dzioba': 'Długość dzioba (cm)',
-        'Grubość dzioba': 'Grubość dzioba (cm)',
-        'Długość głowy': 'Długość głowy (cm)',
-        'Szerokość głowy': 'Szerokość głowy (cm)',
-        'Długość tułowia': 'Długość tułowia (cm)',
-        'Długość ciała': 'Długość ciała (cm)',
-        'Długość skrzydła P': 'Długość skrzydła P (cm)',
-        'Długość skrzydła L': 'Długość skrzydła L (cm)',
-        'Rozpiętość skrzydeł': 'Rozpiętość skrzydeł (cm)',
-        'Szerokość klatki piersiowej': 'Szerokość klatki piersiowej (cm)',
-        'Obwód klatki piersiowej': 'Obwód klatki piersiowej (cm)',
-        'Głebokość klatki piersiowej': 'Głębokość klatki piersiowej (cm)',
-        'Długość ogona': 'Długość ogona (cm)',
-        'Średnica stępu/skoku LEWEGO': 'Średnica stępu/skoku LEWEGO (cm)',
-        'Masa ciała (kg)': 'Masa ciała (g)',  # ⚠️ convert values too!
-        'Długość przełyku z wolem (cm)': 'Długość przełyku z wolem (cm)',
-        'Długość żołądka gruczołowego (cm)': 'Długość żołądka gruczołowego (cm)',
-        'Masa żółądka mięśniowego (g)': 'Masa żołądka mięśniowego (g)',
-        'Obwód żołądka mięśniowego w naj.m. (cm)': 'Obwód żołądka mięśniowego (cm)',
-        'Objętość żołądka mięśniowego (ml)': 'Objętość żołądka mięśniowego (ml)',
-        'Długość dwunastnicy': 'Długość dwunastnicy (cm)',
-        'Długość jelita czczego': 'Długość jelita czczego (cm)',
-        'Długość jelita biodrowego': 'Długość jelita biodrowego (cm)',
-        'Długość jelita ślepiego P': 'Długość jelita ślepego P (cm)',
-        'Długość jelita ślepiego L': 'Długość jelita ślepego L (cm)',
-        'Okrężnica z odbytnicą': 'Okrężnica z odbytnicą (cm)',
-        'Masa serca (g)': 'Masa serca (g)',
-        'Masa wątroby (g)': 'Masa wątroby (g)',
-        'Nerki\tP': 'Nerki P',
-        'Nerki L': 'Nerki L',
-        'Płeć': 'Płeć',
-        'Długość ciała (cm)': 'Długość ciała (cm)',
-        'Masa ciała (g)': 'Masa ciała (g)',
-    }, inplace=True)
-    df["Rozpiętość skrzydeł (cm)"] = df["Rozpiętość skrzydeł (cm)"].dropna().astype(float)
+    df.rename(
+        columns={
+            "Długość dzioba": "Długość dzioba (cm)",
+            "Grubość dzioba": "Grubość dzioba (cm)",
+            "Długość głowy": "Długość głowy (cm)",
+            "Szerokość głowy": "Szerokość głowy (cm)",
+            "Długość tułowia": "Długość tułowia (cm)",
+            "Długość ciała": "Długość ciała (cm)",
+            "Długość skrzydła P": "Długość skrzydła P (cm)",
+            "Długość skrzydła L": "Długość skrzydła L (cm)",
+            "Rozpiętość skrzydeł": "Rozpiętość skrzydeł (cm)",
+            "Szerokość klatki piersiowej": "Szerokość klatki piersiowej (cm)",
+            "Obwód klatki piersiowej": "Obwód klatki piersiowej (cm)",
+            "Głebokość klatki piersiowej": "Głębokość klatki piersiowej (cm)",
+            "Długość ogona": "Długość ogona (cm)",
+            "Średnica stępu/skoku LEWEGO": "Średnica stępu L (cm)",
+            "Masa ciała (kg)": "Masa ciała (g)",  # ⚠️ convert values too!
+            "Długość przełyku z wolem (cm)": "Długość przełyku z wolem (cm)",
+            "Długość żołądka gruczołowego (cm)": "Długość żołądka gruczołowego (cm)",
+            "Masa żółądka mięśniowego (g)": "Masa żołądka mięśniowego (g)",
+            "Obwód żołądka mięśniowego w naj.m. (cm)": "Obwód żołądka mięśniowego (cm)",
+            "Objętość żołądka mięśniowego (ml)": "Objętość żołądka mięśniowego (ml)",
+            "Długość dwunastnicy": "Długość dwunastnicy (cm)",
+            "Długość jelita czczego": "Długość jelita czczego (cm)",
+            "Długość jelita biodrowego": "Długość jelita biodrowego (cm)",
+            "Długość jelita ślepiego P": "Długość jelita ślepego P (cm)",
+            "Długość jelita ślepiego L": "Długość jelita ślepego L (cm)",
+            "Okrężnica z odbytnicą": "Okrężnica z odbytnicą (cm)",
+            "Masa serca (g)": "Masa serca (g)",
+            "Masa wątroby (g)": "Masa wątroby (g)",
+            "Nerki\tP": "Masa nerki P (g)",
+            "Nerki L": "Masa nerki L (g)",
+            "Płeć": "Płeć",
+            "Długość ciała (cm)": "Długość ciała (cm)",
+            "Masa ciała (g)": "Masa ciała (g)",
+        },
+        inplace=True,
+    )
+    # df["Rozpiętość skrzydeł (cm)"] = (
+    #     df["Rozpiętość skrzydeł (cm)"].dropna().astype(float)
+    # )
+
+    problematic_cols = ["Rozpiętość skrzydeł (cm)", 'Długość skrzydła L (cm)', 'Długość jelita biodrowego (cm)', 'Długość jelita ślepego P (cm)', 'Długość jelita ślepego L (cm)']
+    for col in problematic_cols:
+        df[col] = df[col].dropna().astype(float)
     return df
 
 
