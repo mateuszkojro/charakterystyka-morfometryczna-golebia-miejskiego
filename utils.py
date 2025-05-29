@@ -64,19 +64,19 @@ class Dataset:
     def fix_intestine(self):
         self.df.dropna(inplace=True)
         self.df["Długość jelita cieńkiego (cm)"] = (
-            self.df["Długość dwunastnicy"].astype(float)
-            + self.df["Długość jelita czczego"].astype(float)
-            + self.df["Długość jelita biodrowego"].astype(float)
+            self.df["Długość dwunastnicy (cm)"].astype(float)
+            + self.df["Długość jelita czczego (cm)"].astype(float)
+            + self.df["Długość jelita biodrowego (cm)"].astype(float)
         )
         self.df["Długość jelita grubego (cm)"] = (
             (
-                self.df["Długość jelita ślepiego P"]
+                self.df["Długość jelita ślepego P (cm)"]
                 .replace("BRAK", pd.NA)
                 .astype(float)
-                + self.df["Długość jelita ślepiego P"].astype(float)
+                + self.df["Długość jelita ślepego P (cm)"].astype(float)
             ).astype(float)
             / 2
-        ) + self.df["Okrężnica z odbytnicą"].astype(float)
+        ) + self.df["Okrężnica z odbytnicą (cm)"].astype(float)
         self.df["Stosunek C/G"] = (
             self.df["Długość jelita cieńkiego (cm)"]
             / self.df["Długość jelita grubego (cm)"]
@@ -105,12 +105,12 @@ class Dataset:
 
     def compare_by_gender(self, x):
         f, m = self._get_gender_dfs(self.df[x])
-        u = stats.mannwhitneyu(f, m)
+        u = stats.ttest_ind(f, m, equal_var=False)
         cv_f = stats.variation(f)
         cv_m = stats.variation(m)
         print(f"{x} female: mean={f.mean():.2f}, std={f.std():.2f}, cv={cv_f:.2f}")
         print(f"{x} male: mean={m.mean():.2f}, std={m.std():.2f}, cv={cv_m:.2f}")
-        print(f"Mann-Whitney 'u' {x} by gender: pvalue={u.pvalue:.2f}")
+        print(f"t-test {x} by gender: pvalue={u.pvalue:.2f}")
         # print("F", self.basic_stats(x))
         # print("M", self.basic_stats(y))
         g = sns.boxplot(x="Płeć", y=x, data=self.df)
@@ -175,7 +175,7 @@ class Dataset:
     
     def corr_heatmap(self, filter, columns, title, vmin=-1, vmax=1, **kwargs):
         plt.figure(figsize=(18, 10))
-        corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='spearman')
+        corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='pearson')
         ones = np.ones_like(corr)
         mask = ones - np.tril(ones) 
         g = sns.heatmap(
