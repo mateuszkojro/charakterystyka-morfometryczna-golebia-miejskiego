@@ -7,8 +7,8 @@ import numpy as np
 class Dataset:
 
     @staticmethod
-    def from_sheets():
-        return Dataset(df=get_data())
+    def from_sheets(remove_outliers=True ,dropna=False):
+        return Dataset(df=get_data(dropna=dropna, remove_outliers=remove_outliers))
 
     def __init__(self, df):
         self.df = df
@@ -202,7 +202,7 @@ def init_notebook():
     # %autoreload 2
 
 
-def get_data():
+def get_data(remove_outliers, dropna):
     df = pd.read_csv(
         "https://docs.google.com/spreadsheets/d/1Xeg_KqurQLsgOAikRfmxNsrqY1WkusTG/export?format=csv&gid=2112095053"
     )
@@ -253,9 +253,25 @@ def get_data():
     #     df["Rozpiętość skrzydeł (cm)"].dropna().astype(float)
     # )
 
+
+    if remove_outliers:
+        print("Replacing outliers with na")
+        df[outlier_indeces(df)] = pd.NA
+
+    if dropna:
+        print("Removing na")
+        df.dropna(inplace=True)
+
+
+    def to_float(number):
+        try:
+            return float(number)
+        except TypeError as e:
+            return float("nan")
+            
     problematic_cols = ["Rozpiętość skrzydeł (cm)", 'Długość skrzydła L (cm)', 'Długość jelita biodrowego (cm)', 'Długość jelita ślepego P (cm)', 'Długość jelita ślepego L (cm)']
     for col in problematic_cols:
-        df[col] = df[col].dropna().astype(float)
+        df[col] = df[col].apply(to_float).astype(float)
     return df
 
 
@@ -274,3 +290,18 @@ def combined_sample_stats(groups):
 
     var = (within + between) / (total_n - 1)
     return mean, var**0.5
+
+
+def modified_z_score(series):
+    series = series.copy().fillna(series.mean())
+    median = np.median(series)
+    mad = np.median(np.abs(series - median))
+    if mad == 0:
+        return np.zeros(len(series))  # Avoid division by zero
+    return 0.6745 * (series - median) / mad
+
+
+def outlier_indeces(df, zscore=3.5):
+    z_scores = df.select_dtypes(include=[np.number]).apply(modified_z_score)
+    outliers = (np.abs(z_scores) > 3.5)
+    return outliers
