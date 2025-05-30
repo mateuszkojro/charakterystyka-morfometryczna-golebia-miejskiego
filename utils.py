@@ -149,7 +149,8 @@ class Dataset:
         sns.lineplot(
             x=self.df[x],
             y=slope * self.df[x] + intercept,
-            color="black",
+            color="gray",
+            linestyle="--",
             label="Linia regresji",
             ax=ax,
         )
