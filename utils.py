@@ -127,8 +127,10 @@ class Dataset:
         print(self.basic_stats(x))
         print(self.basic_stats(y))
 
+        corr_df = self.df[[x, y]].dropna()
+
         # Pearson correlation
-        corr = stats.pearsonr(self.df[x], self.df[y])
+        corr = stats.pearsonr(corr_df[x], corr_df[y])
         f, m = self._get_gender_dfs(self.df)
         corr_f = stats.pearsonr(f[x], f[y])
         corr_m = stats.pearsonr(m[x], m[y])
@@ -139,13 +141,13 @@ class Dataset:
 
         # Linear regression for line of best fit
         slope, intercept, r_value, p_value, std_err = stats.linregress(
-            self.df[x], self.df[y]
+            corr_df[x], corr_df[y]
         )
         line_eq = f"y = {slope:.2f}x + {intercept:.2f}\nR² = {r_value**2:.2f}"
 
         # Plot
         # plt.figure(figsize=(8, 6))
-        g = sns.scatterplot(data=self.df, x=x, y=y, ax=ax, **kwargs)
+        sns.scatterplot(data=self.df, x=x, y=y, ax=ax, **kwargs)
         sns.lineplot(
             x=self.df[x],
             y=slope * self.df[x] + intercept,
@@ -169,6 +171,8 @@ class Dataset:
         if ax is None or not hasattr(ax, "figure"):
             fig = ax.get_figure()
             self._save_plot(fig, f"Correlation between {x} and {y}")
+        else:
+            self._save_plot(ax, f"Correlation between {x} and {y}")
         return ax
 
     def corr_body_mass(self, y, **kwargs):
