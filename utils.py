@@ -3,6 +3,10 @@ import seaborn as sns
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 import numpy as np
+import locale
+
+locale.setlocale(locale.LC_NUMERIC, 'pl_PL.UTF-8')
+
 
 class Dataset:
 
@@ -135,6 +139,7 @@ class Dataset:
         corr_f = stats.pearsonr(f[x], f[y])
         corr_m = stats.pearsonr(m[x], m[y])
 
+
         print(f"r^2={corr.statistic:.2f}, pvalue={corr.pvalue:.2f}")
         print(f"    F r^2={corr_f.statistic:.2f}, pvalue={corr_f.pvalue:.2f}")
         print(f"    M r^2={corr_m.statistic:.2f}, pvalue={corr_m.pvalue:.2f}")
@@ -143,7 +148,8 @@ class Dataset:
         slope, intercept, r_value, p_value, std_err = stats.linregress(
             corr_df[x], corr_df[y]
         )
-        line_eq = f"y = {slope:.2f}x + {intercept:.2f}\nR² = {r_value**2:.2f}"
+
+        
 
         # Plot
         # plt.figure(figsize=(8, 6))
@@ -156,6 +162,11 @@ class Dataset:
             label="Linia regresji",
             ax=ax,
         )
+        slope = f"{slope:.2f}".replace(".", ",")
+        intercept = f"{intercept:.2f}".replace(".", ",")
+        r_value = f"{r_value**2:.2f}".replace(".", ",")
+        line_eq = f"y = aaa  {slope}x + {intercept}\nR² = {r_value}"
+        print(line_eq)
 
         # Annotate equation on the plot
         ax.text(
