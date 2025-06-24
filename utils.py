@@ -4,8 +4,22 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import numpy as np
 import locale
+from matplotlib.ticker import FuncFormatter
 
 locale.setlocale(locale.LC_NUMERIC, 'pl_PL.UTF-8')
+
+def comma_formatter(x, pos):
+    # if float(x) == int(x):
+    #     return str(int(x))
+        
+    return "{:0.2f}".format(x).replace('.', ',')
+
+def comma_formatter2(x):
+    if float(x) == int(x):
+        return str(int(x))
+        
+    return "{:0.2f}".format(x).replace('.', ',')
+
 
 
 class Dataset:
@@ -117,6 +131,10 @@ class Dataset:
         print(f"t-test {x} by gender: pvalue={u.pvalue:.2f}")
         # print("F", self.basic_stats(x))
         # print("M", self.basic_stats(y))
+                
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        
         g = sns.boxplot(x="Płeć", y=x, data=self.df)
         self._save_plot(g, f"{x} by gender")
         return g
@@ -127,7 +145,10 @@ class Dataset:
     def linear_corr_pearson(self, x, y, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
-
+        
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        
         print(self.basic_stats(x))
         print(self.basic_stats(y))
 
@@ -165,7 +186,7 @@ class Dataset:
         slope = f"{slope:.2f}".replace(".", ",")
         intercept = f"{intercept:.2f}".replace(".", ",")
         r_value = f"{r_value**2:.2f}".replace(".", ",")
-        line_eq = f"y = aaa  {slope}x + {intercept}\nR² = {r_value}"
+        line_eq = f"y = {slope}x + {intercept}\nR² = {r_value}"
         print(line_eq)
 
         # Annotate equation on the plot
@@ -178,6 +199,8 @@ class Dataset:
             verticalalignment="top",
         )
 
+
+        
         ax.legend()
         if ax is None or not hasattr(ax, "figure"):
             fig = ax.get_figure()
@@ -191,6 +214,10 @@ class Dataset:
     
     def corr_heatmap(self, filter, columns, title, vmin=-1, vmax=1, **kwargs):
         plt.figure(figsize=(18, 10))
+                    
+        plt.gca().xaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        plt.gca().yaxis.set_major_formatter(FuncFormatter(comma_formatter))
+        
         corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='pearson')
         ones = np.ones_like(corr)
         mask = ones - np.tril(ones) 
@@ -198,7 +225,7 @@ class Dataset:
             corr[columns],
             annot=True,
             mask=mask.astype(bool),
-            fmt=".2f",
+            fmt="comma_formatter2(val)",
             cmap="coolwarm",
             square=False,
             vmin=vmin,
