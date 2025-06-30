@@ -7,7 +7,7 @@
 python -m venv .venv
 ```
 
-``` bash
+```bash
 .\.venv\Scripts\activate
 ```
 
@@ -22,5 +22,5 @@ annotation = ("{:" + self.fmt + "}").format(val)
 ```
 with:
 ```python
-annotation = "{:0.2f}".format(val).replace('.', ',')
+annotation = "{:.2f}".format(val).replace('.', ',')
 ```
