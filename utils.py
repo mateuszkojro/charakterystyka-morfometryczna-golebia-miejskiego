@@ -4,14 +4,37 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import numpy as np
 import locale
+from matplotlib.ticker import FuncFormatter
 
-locale.setlocale(locale.LC_NUMERIC, 'pl_PL.UTF-8')
+locale.setlocale(locale.LC_NUMERIC, "pl_PL.UTF-8")
+
+
+def comma_formatter(x, pos, label: str = ""):
+
+    # very robust coding right here
+    if type(label) is str:
+        if label.strip() in [
+            "Płeć",
+            "Długość ciała (cm)",
+            "Rozpiętość skrzydeł (cm)",
+            "Obwód klatki piersiowej (cm)",
+            "Całkowita długość jelit (cm)",
+            "Masa ciała (g)",
+            "Masa wątroby (g)",
+            "Długość jelita cieńkiego (cm)",
+            "Długość jelita grubego (cm)",
+            "Objętość żołądka mięśniowego (ml)",
+            "Stosunek C/G",
+        ]:
+            return str(int(x))
+
+    return "{:0.2f}".format(x).replace(".", ",")
 
 
 class Dataset:
 
     @staticmethod
-    def from_sheets(remove_outliers=True ,dropna=False):
+    def from_sheets(remove_outliers=True, dropna=False):
         return Dataset(df=get_data(dropna=dropna, remove_outliers=remove_outliers))
 
     def __init__(self, df):
@@ -27,38 +50,31 @@ class Dataset:
     def data_cols(self):
         return [
             "Masa ciała (g)",
-
             "Długość ciała (cm)",
             "Długość tułowia (cm)",
             "Długość skrzydła P (cm)",
             "Długość skrzydła L (cm)",
             "Rozpiętość skrzydeł (cm)",
             "Długość ogona (cm)",
-            
             "Długość głowy (cm)",
             "Długość dzioba (cm)",
             "Grubość dzioba (cm)",
             "Szerokość głowy (cm)",
-
             "Średnica stępu L (cm)",
-            
             "Szerokość klatki piersiowej (cm)",
             "Obwód klatki piersiowej (cm)",
             "Głębokość klatki piersiowej (cm)",
-            
             "Długość przełyku z wolem (cm)",
             "Długość żołądka gruczołowego (cm)",
             "Masa żołądka mięśniowego (g)",
             "Obwód żołądka mięśniowego (cm)",
             "Objętość żołądka mięśniowego (ml)",
-            
             "Długość dwunastnicy (cm)",
             "Długość jelita czczego (cm)",
             "Długość jelita biodrowego (cm)",
             "Długość jelita ślepego P (cm)",
             "Długość jelita ślepego L (cm)",
             "Okrężnica z odbytnicą (cm)",
-            
             "Masa serca (g)",
             "Masa wątroby (g)",
             "Masa nerki P (g)",
@@ -117,6 +133,11 @@ class Dataset:
         print(f"t-test {x} by gender: pvalue={u.pvalue:.2f}")
         # print("F", self.basic_stats(x))
         # print("M", self.basic_stats(y))
+
+        plt.gca().yaxis.set_major_formatter(
+            FuncFormatter(lambda x2, pos: comma_formatter(x2, pos, label=x))
+        )
+
         g = sns.boxplot(x="Płeć", y=x, data=self.df)
         self._save_plot(g, f"{x} by gender")
         return g
@@ -127,6 +148,13 @@ class Dataset:
     def linear_corr_pearson(self, x, y, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
+
+        plt.gca().xaxis.set_major_formatter(
+            FuncFormatter(lambda x2, pos: comma_formatter(x2, pos, label=x))
+        )
+        plt.gca().yaxis.set_major_formatter(
+            FuncFormatter(lambda x2, pos: comma_formatter(x2, pos, label=y))
+        )
 
         print(self.basic_stats(x))
         print(self.basic_stats(y))
@@ -139,7 +167,6 @@ class Dataset:
         corr_f = stats.pearsonr(f[x], f[y])
         corr_m = stats.pearsonr(m[x], m[y])
 
-
         print(f"r^2={corr.statistic:.2f}, pvalue={corr.pvalue:.2f}")
         print(f"    F r^2={corr_f.statistic:.2f}, pvalue={corr_f.pvalue:.2f}")
         print(f"    M r^2={corr_m.statistic:.2f}, pvalue={corr_m.pvalue:.2f}")
@@ -148,8 +175,6 @@ class Dataset:
         slope, intercept, r_value, p_value, std_err = stats.linregress(
             corr_df[x], corr_df[y]
         )
-
-        
 
         # Plot
         # plt.figure(figsize=(8, 6))
@@ -165,7 +190,7 @@ class Dataset:
         slope = f"{slope:.2f}".replace(".", ",")
         intercept = f"{intercept:.2f}".replace(".", ",")
         r_value = f"{r_value**2:.2f}".replace(".", ",")
-        line_eq = f"y = aaa  {slope}x + {intercept}\nR² = {r_value}"
+        line_eq = f"y = {slope}x + {intercept}\nR² = {r_value}"
         print(line_eq)
 
         # Annotate equation on the plot
@@ -188,17 +213,17 @@ class Dataset:
 
     def corr_body_mass(self, y, **kwargs):
         return self.linear_corr_pearson(x="Masa ciała (g)", y=y, **kwargs)
-    
+
     def corr_heatmap(self, filter, columns, title, vmin=-1, vmax=1, **kwargs):
         plt.figure(figsize=(18, 10))
-        corr = self.df[filter][self.data_cols].corr(numeric_only=True, method='pearson')
+
+        corr = self.df[filter][self.data_cols].corr(numeric_only=True, method="pearson")
         ones = np.ones_like(corr)
-        mask = ones - np.tril(ones) 
+        mask = ones - np.tril(ones)
         g = sns.heatmap(
             corr[columns],
             annot=True,
             mask=mask.astype(bool),
-            fmt=".2f",
             cmap="coolwarm",
             square=False,
             vmin=vmin,
@@ -208,7 +233,6 @@ class Dataset:
         self._save_plot(g, title)
         # g.set_title(title)
         return g
-
 
 
 def init_notebook():
@@ -269,7 +293,6 @@ def get_data(remove_outliers, dropna):
     #     df["Rozpiętość skrzydeł (cm)"].dropna().astype(float)
     # )
 
-
     if remove_outliers:
         print("Replacing outliers with na")
         df[outlier_indeces(df)] = pd.NA
@@ -278,14 +301,19 @@ def get_data(remove_outliers, dropna):
         print("Removing na")
         df.dropna(inplace=True)
 
-
     def to_float(number):
         try:
             return float(number)
         except TypeError as e:
             return float("nan")
-            
-    problematic_cols = ["Rozpiętość skrzydeł (cm)", 'Długość skrzydła L (cm)', 'Długość jelita biodrowego (cm)', 'Długość jelita ślepego P (cm)', 'Długość jelita ślepego L (cm)']
+
+    problematic_cols = [
+        "Rozpiętość skrzydeł (cm)",
+        "Długość skrzydła L (cm)",
+        "Długość jelita biodrowego (cm)",
+        "Długość jelita ślepego P (cm)",
+        "Długość jelita ślepego L (cm)",
+    ]
     for col in problematic_cols:
         df[col] = df[col].apply(to_float).astype(float)
     return df
@@ -319,5 +347,5 @@ def modified_z_score(series):
 
 def outlier_indeces(df, zscore=3.5):
     z_scores = df.select_dtypes(include=[np.number]).apply(modified_z_score)
-    outliers = (np.abs(z_scores) > 3.5)
+    outliers = np.abs(z_scores) > 3.5
     return outliers
