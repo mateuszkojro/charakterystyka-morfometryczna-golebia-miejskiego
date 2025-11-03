@@ -127,19 +127,19 @@ class Dataset:
     def linear_corr_pearson(self, x, y, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
-
+            
+        
         print(self.basic_stats(x))
         print(self.basic_stats(y))
-
+        
         corr_df = self.df[[x, y]].dropna()
-
         # Pearson correlation
         corr = stats.pearsonr(corr_df[x], corr_df[y])
         f, m = self._get_gender_dfs(self.df)
         corr_f = stats.pearsonr(f[x], f[y])
         corr_m = stats.pearsonr(m[x], m[y])
 
-
+            
         print(f"r^2={corr.statistic:.2f}, pvalue={corr.pvalue:.2f}")
         print(f"    F r^2={corr_f.statistic:.2f}, pvalue={corr_f.pvalue:.2f}")
         print(f"    M r^2={corr_m.statistic:.2f}, pvalue={corr_m.pvalue:.2f}")
@@ -149,7 +149,6 @@ class Dataset:
             corr_df[x], corr_df[y]
         )
 
-        
 
         # Plot
         # plt.figure(figsize=(8, 6))
@@ -165,8 +164,9 @@ class Dataset:
         slope = f"{slope:.2f}".replace(".", ",")
         intercept = f"{intercept:.2f}".replace(".", ",")
         r_value = f"{r_value**2:.2f}".replace(".", ",")
-        line_eq = f"y = aaa  {slope}x + {intercept}\nR² = {r_value}"
+        line_eq = f"y = {slope}x + {intercept}\nR² = {r_value}"
         print(line_eq)
+
 
         # Annotate equation on the plot
         ax.text(
@@ -177,6 +177,7 @@ class Dataset:
             fontsize=12,
             verticalalignment="top",
         )
+        
 
         ax.legend()
         if ax is None or not hasattr(ax, "figure"):
